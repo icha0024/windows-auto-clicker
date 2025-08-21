@@ -39,50 +39,60 @@ namespace AutoClicker
         private const uint MOUSEEVENTF_MIDDLEDOWN = 0x20;
         private const uint MOUSEEVENTF_MIDDLEUP = 0x40;
 
+        // Keyboard event constants
+        private const uint KEYEVENTF_KEYUP = 0x02;
+
+        // Common virtual key codes
+        private const byte VK_SPACE = 0x20;
+        private const byte VK_ENTER = 0x0D;
+        private const byte VK_ESCAPE = 0x1B;
+        private const byte VK_TAB = 0x09;
+        private const byte VK_SHIFT = 0x10;
+        private const byte VK_CONTROL = 0x11;
+        private const byte VK_ALT = 0x12;
+
         public static void Main(string[] args)
         {
             Console.WriteLine("Windows Auto-Clicker");
-            Console.WriteLine("Basic clicking functionality test\n");
+            Console.WriteLine("Mouse and Keyboard input support\n");
 
-            // Get current cursor position
-            GetCursorPos(out POINT currentPos);
-            Console.WriteLine($"Current cursor position: ({currentPos.X}, {currentPos.Y})");
-
-            Console.WriteLine("\nTesting click functions:");
-            Console.WriteLine("1. Test single left click at current position");
-            Console.WriteLine("2. Test 5 clicks with delay");
-            Console.WriteLine("3. Test right click");
-            Console.WriteLine("4. Exit");
-            Console.Write("\nChoose option (1-4): ");
-
-            string choice = Console.ReadLine();
-
-            switch (choice)
+            while (true)
             {
-                case "1":
-                    TestSingleClick();
-                    break;
-                case "2":
-                    TestMultipleClicks();
-                    break;
-                case "3":
-                    TestRightClick();
-                    break;
-                case "4":
-                    Console.WriteLine("Exiting...");
-                    return;
-                default:
-                    Console.WriteLine("Invalid choice. Exiting...");
-                    return;
-            }
+                ShowMainMenu();
+                string choice = Console.ReadLine();
 
-            Console.WriteLine("\nPress any key to exit...");
-            Console.ReadKey();
+                switch (choice)
+                {
+                    case "1":
+                        TestMouseClicks();
+                        break;
+                    case "2":
+                        TestKeyboardInput();
+                        break;
+                    case "3":
+                        TestSpecificKey();
+                        break;
+                    case "4":
+                        Console.WriteLine("Exiting...");
+                        return;
+                    default:
+                        Console.WriteLine("Invalid choice. Please try again.\n");
+                        break;
+                }
+            }
         }
 
-        /// <summary>
-        /// Performs a single left mouse click at the current cursor position
-        /// </summary>
+        private static void ShowMainMenu()
+        {
+            Console.WriteLine("=== Auto-Clicker Test Menu ===");
+            Console.WriteLine("1. Test mouse clicks");
+            Console.WriteLine("2. Test keyboard input");
+            Console.WriteLine("3. Test specific key");
+            Console.WriteLine("4. Exit");
+            Console.Write("\nChoose option (1-4): ");
+        }
+
+        // Mouse clicking methods
         private static void PerformLeftClick()
         {
             GetCursorPos(out POINT pos);
@@ -90,9 +100,6 @@ namespace AutoClicker
             mouse_event(MOUSEEVENTF_LEFTUP, (uint)pos.X, (uint)pos.Y, 0, IntPtr.Zero);
         }
 
-        /// <summary>
-        /// Performs a single right mouse click at the current cursor position
-        /// </summary>
         private static void PerformRightClick()
         {
             GetCursorPos(out POINT pos);
@@ -100,79 +107,178 @@ namespace AutoClicker
             mouse_event(MOUSEEVENTF_RIGHTUP, (uint)pos.X, (uint)pos.Y, 0, IntPtr.Zero);
         }
 
-        /// <summary>
-        /// Performs a click at a specific position
-        /// </summary>
-        private static void PerformClickAt(int x, int y, string clickType = "left")
+        private static void PerformMiddleClick()
         {
-            SetCursorPos(x, y);
-            Thread.Sleep(10); // Small delay to ensure cursor is positioned
+            GetCursorPos(out POINT pos);
+            mouse_event(MOUSEEVENTF_MIDDLEDOWN, (uint)pos.X, (uint)pos.Y, 0, IntPtr.Zero);
+            mouse_event(MOUSEEVENTF_MIDDLEUP, (uint)pos.X, (uint)pos.Y, 0, IntPtr.Zero);
+        }
 
-            switch (clickType.ToLower())
+        // Keyboard input methods
+        private static void PerformKeyPress(byte virtualKey)
+        {
+            keybd_event(virtualKey, 0, 0, 0);           // Key down
+            keybd_event(virtualKey, 0, KEYEVENTF_KEYUP, 0); // Key up
+        }
+
+        private static void PerformKeyPress(char key)
+        {
+            byte virtualKey = (byte)char.ToUpper(key);
+            PerformKeyPress(virtualKey);
+        }
+
+        private static void PerformKeyHold(byte virtualKey, int holdTimeMs)
+        {
+            keybd_event(virtualKey, 0, 0, 0);           // Key down
+            Thread.Sleep(holdTimeMs);
+            keybd_event(virtualKey, 0, KEYEVENTF_KEYUP, 0); // Key up
+        }
+
+        private static byte GetVirtualKeyCode(string keyName)
+        {
+            switch (keyName.ToUpper())
             {
-                case "left":
-                    mouse_event(MOUSEEVENTF_LEFTDOWN, (uint)x, (uint)y, 0, IntPtr.Zero);
-                    mouse_event(MOUSEEVENTF_LEFTUP, (uint)x, (uint)y, 0, IntPtr.Zero);
-                    break;
-                case "right":
-                    mouse_event(MOUSEEVENTF_RIGHTDOWN, (uint)x, (uint)y, 0, IntPtr.Zero);
-                    mouse_event(MOUSEEVENTF_RIGHTUP, (uint)x, (uint)y, 0, IntPtr.Zero);
-                    break;
-                case "middle":
-                    mouse_event(MOUSEEVENTF_MIDDLEDOWN, (uint)x, (uint)y, 0, IntPtr.Zero);
-                    mouse_event(MOUSEEVENTF_MIDDLEUP, (uint)x, (uint)y, 0, IntPtr.Zero);
-                    break;
+                case "SPACE": return VK_SPACE;
+                case "ENTER": return VK_ENTER;
+                case "ESC": case "ESCAPE": return VK_ESCAPE;
+                case "TAB": return VK_TAB;
+                case "SHIFT": return VK_SHIFT;
+                case "CTRL": case "CONTROL": return VK_CONTROL;
+                case "ALT": return VK_ALT;
+                case "F1": return 0x70;
+                case "F2": return 0x71;
+                case "F3": return 0x72;
+                case "F4": return 0x73;
+                case "F5": return 0x74;
+                case "W": return 0x57;
+                case "A": return 0x41;
+                case "S": return 0x53;
+                case "D": return 0x44;
+                default:
+                    // For single characters
+                    if (keyName.Length == 1)
+                    {
+                        return (byte)char.ToUpper(keyName[0]);
+                    }
+                    return 0; // Invalid key
             }
         }
 
-        private static void TestSingleClick()
+        private static void TestMouseClicks()
         {
-            Console.WriteLine("\nPerforming single left click in 3 seconds...");
-            Console.WriteLine("Position your cursor where you want to click!");
-            
+            Console.WriteLine("\n=== Mouse Click Test ===");
+            Console.WriteLine("1. Left click");
+            Console.WriteLine("2. Right click");
+            Console.WriteLine("3. Middle click");
+            Console.WriteLine("4. Multiple left clicks");
+            Console.Write("Choose option: ");
+
+            string choice = Console.ReadLine();
+            Console.WriteLine("\nStarting in 3 seconds - position your cursor!");
+
             for (int i = 3; i > 0; i--)
             {
-                Console.WriteLine($"Clicking in {i}...");
+                Console.WriteLine($"{i}...");
                 Thread.Sleep(1000);
             }
 
-            PerformLeftClick();
-            Console.WriteLine("Click performed!");
+            switch (choice)
+            {
+                case "1":
+                    PerformLeftClick();
+                    Console.WriteLine("Left click performed!");
+                    break;
+                case "2":
+                    PerformRightClick();
+                    Console.WriteLine("Right click performed!");
+                    break;
+                case "3":
+                    PerformMiddleClick();
+                    Console.WriteLine("Middle click performed!");
+                    break;
+                case "4":
+                    for (int i = 0; i < 5; i++)
+                    {
+                        PerformLeftClick();
+                        Console.WriteLine($"Click {i + 1} performed");
+                        Thread.Sleep(300);
+                    }
+                    break;
+                default:
+                    Console.WriteLine("Invalid option");
+                    break;
+            }
+
+            Console.WriteLine("Press any key to return to menu...");
+            Console.ReadKey();
+            Console.Clear();
         }
 
-        private static void TestMultipleClicks()
+        private static void TestKeyboardInput()
         {
-            Console.WriteLine("\nPerforming 5 clicks with 500ms delay in 3 seconds...");
-            Console.WriteLine("Position your cursor where you want to click!");
-            
+            Console.WriteLine("\n=== Keyboard Input Test ===");
+            Console.WriteLine("Testing common keys in 3 seconds...");
+            Console.WriteLine("Make sure a text editor is focused!");
+
             for (int i = 3; i > 0; i--)
             {
-                Console.WriteLine($"Starting in {i}...");
+                Console.WriteLine($"{i}...");
                 Thread.Sleep(1000);
             }
 
-            for (int i = 1; i <= 5; i++)
+            // Type "Hello World"
+            string message = "Hello World";
+            foreach (char c in message)
             {
-                PerformLeftClick();
-                Console.WriteLine($"Click {i} performed");
-                Thread.Sleep(500);
+                if (c == ' ')
+                {
+                    PerformKeyPress(VK_SPACE);
+                }
+                else
+                {
+                    PerformKeyPress(c);
+                }
+                Thread.Sleep(100);
             }
-            Console.WriteLine("All clicks completed!");
+
+            Thread.Sleep(500);
+            PerformKeyPress(VK_ENTER); // Press Enter
+
+            Console.WriteLine("Keyboard test completed!");
+            Console.WriteLine("Press any key to return to menu...");
+            Console.ReadKey();
+            Console.Clear();
         }
 
-        private static void TestRightClick()
+        private static void TestSpecificKey()
         {
-            Console.WriteLine("\nPerforming single right click in 3 seconds...");
-            Console.WriteLine("Position your cursor where you want to right-click!");
-            
+            Console.WriteLine("\n=== Specific Key Test ===");
+            Console.Write("Enter key to press (e.g., W, A, S, D, SPACE, ENTER, F1): ");
+            string keyInput = Console.ReadLine();
+
+            byte virtualKey = GetVirtualKeyCode(keyInput);
+            if (virtualKey == 0)
+            {
+                Console.WriteLine("Invalid key. Please try again.");
+                Console.WriteLine("Press any key to return to menu...");
+                Console.ReadKey();
+                Console.Clear();
+                return;
+            }
+
+            Console.WriteLine($"\nPressing '{keyInput.ToUpper()}' in 3 seconds...");
             for (int i = 3; i > 0; i--)
             {
-                Console.WriteLine($"Right-clicking in {i}...");
+                Console.WriteLine($"{i}...");
                 Thread.Sleep(1000);
             }
 
-            PerformRightClick();
-            Console.WriteLine("Right-click performed!");
+            PerformKeyPress(virtualKey);
+            Console.WriteLine($"Key '{keyInput.ToUpper()}' pressed!");
+
+            Console.WriteLine("Press any key to return to menu...");
+            Console.ReadKey();
+            Console.Clear();
         }
     }
 }
