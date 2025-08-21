@@ -1,4 +1,4 @@
-# windows-auto-clicker
+# Windows auto clicker
 Windows autoclicker using native Windows API for gaming and automation
 
 **Features**
